@@ -3,8 +3,29 @@
 
 #include "cocos2d.h"
 
-#define MAX_VALUES 10
-#define MAX_TIMES 10
+#define MAX_VALUES 2
+#define MAX_TIMES 200
+
+enum GAME_OBJECTS
+{
+	GO_ORB,
+	GO_BUTTONMENU,
+	GO_YOURGREENLABEL,
+	GO_YOURREDLABEL,
+	GO_COMPGREENLABEL,
+	GO_COMPREDLABEL,
+	GO_LEVELLABEL,
+	GO_YOURALLTIMELABEL,
+	GO_COMPALLTIMELABEL,
+};
+
+static const char* YOUR_ALL_TIME_G_KEY = "youralltimeg";
+static const char* YOUR_ALL_TIME_R_KEY = "youralltimer";
+
+static const char* COMP_ALL_TIME_G_KEY = "compalltimeg";
+static const char* COMP_ALL_TIME_R_KEY = "compalltimer";
+
+static const float TINT_DURATION = .25f;
 
 USING_NS_CC;
 
@@ -52,15 +73,36 @@ private:
 	int compGCount;
 	int compRCount;
 
+	Label* levelLabel;
+	int level;
+
+	Label* yourAllTimeTotals;
+	int yourAllTimeGreenCount;
+	int yourAllTimeRedCount;
+
+	Label* compAllTimeTotals;
+	int compAllTimeGreenCount;
+	int compAllTimeRedCount;
+
 	int loopCount;
 	boolean yourTurn;
 
-	// create the labels
-	void createLabels();
 	// create the hud
 	void createHud();
+	// hud for count labels
+	void createCountLabels();
+	// hud for level labels
+	void createLevelLabel();
+	// hud for all time counts
+	void createAllTimeLabels();
+	// hud for close button
+	void createCloseButton();
+
 	// create the orb
 	void createOrb();
+
+	// check if level passed
+	bool didPassLevel();
 };
 
 #endif // __HELLOWORLD_SCENE_H__
