@@ -213,6 +213,8 @@ void HelloWorld::gameOver()
 	sprintf(buffer, "Comp All Time: \nGreens:%d Reds:%d", compAllTimeGreenCount, compAllTimeRedCount);
 	std::string compLabel = buffer;
 	compAllTimeTotals->setString(compLabel);
+
+	sendResults(yourGCount, yourRCount, compGCount, compRCount);
 }
 
 void HelloWorld::menuCloseCallback(Ref* pSender)
@@ -332,6 +334,11 @@ bool HelloWorld::didPassLevel()
 
 void HelloWorld::update(float dt)
 {
+	updateLables(dt);
+}
+
+void HelloWorld::updateLables(float dt)
+{
 	char buffer[50];
 
 	sprintf(buffer, "Your Green:%d", yourGCount);
@@ -353,4 +360,50 @@ void HelloWorld::update(float dt)
 	sprintf(buffer, "Level:%d", level);
 	std::string levelString = buffer;
 	levelLabel->setString(levelString);
+}
+
+void HelloWorld::sendResults(int yourGreens, int yourReds, int compGreens, int compReds)
+{
+	cocos2d::network::HttpRequest* request = new cocos2d::network::HttpRequest();
+	request->setUrl("http://ec2-52-2-116-170.compute-1.amazonaws.com:8080/ajax/AddBasicLog");
+	request->setRequestType(cocos2d::network::HttpRequest::Type::POST);
+	request->setResponseCallback(CC_CALLBACK_2(HelloWorld::onHttpRequestCompleted, this));
+
+	// write the post data
+	char buffer[100];
+	sprintf(buffer, "ygreen=%d&yred=%d&cgreen=%d&cred=%d", yourGreens, yourReds, compGreens, compReds);
+	const char* postData = buffer;
+	request->setRequestData(postData, strlen(postData));
+
+	request->setTag("POST test1");
+	cocos2d::network::HttpClient::getInstance()->send(request);
+	request->release();
+
+	/*
+	GET REQUEST
+	char buffer[100];
+	//sprintf(buffer, "http://ec2-52-2-116-170.compute-1.amazonaws.com:8080/ajax/sendTurn.jsp?ygreen=%d&yred=%d&cgreen=%d&cred=%d", yourGreens, yourReds, compGreens, compReds);
+	sprintf(buffer, "http://localhost:8080/ajax/sendTurn.jsp?ygreen=%d&yred=%d&cgreen=%d&cred=%d", yourGreens, yourReds, compGreens, compReds);
+	const char* url = buffer;
+
+	cocos2d::network::HttpRequest* request = new cocos2d::network::HttpRequest();
+	request->setUrl(url);
+	request->setRequestType(cocos2d::network::HttpRequest::Type::GET);
+	request->setResponseCallback(CC_CALLBACK_2(HelloWorld::onHttpRequestCompleted, this));
+	request->setTag("GET test1");
+	cocos2d::network::HttpClient::getInstance()->send(request);
+	request->release();
+	*/
+}
+
+void HelloWorld::onHttpRequestCompleted(cocos2d::network::HttpClient* client, cocos2d::network::HttpResponse* response)
+{
+	if (response && response->getResponseCode() == 200 && response->getResponseData()) {
+		std::vector<char> *data = response->getResponseData();
+		std::string ret(&(data->front()), data->size());
+		log("%s", ("Response message: " + ret).c_str());
+	}
+	else {
+		log("%s", ("Error " + std::to_string(response->getResponseCode()) + " in request").c_str()); //error
+	}
 }

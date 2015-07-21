@@ -2,6 +2,7 @@
 #define __HELLOWORLD_SCENE_H__
 
 #include "cocos2d.h"
+#include "network/HttpClient.h"
 
 #define MAX_VALUES 2
 #define MAX_TIMES 200
@@ -52,12 +53,17 @@ public:
 
 	// update loop
 	void update(float dt);
+	void updateLables(float dt);
 
 	// start the game
 	void startNewGame(Ref* pSender);
 
 	// game over
 	void gameOver();
+
+	// network test code
+	void sendResults(int yourGreens, int yourReds, int compGreens, int compReds);
+	void onHttpRequestCompleted(cocos2d::network::HttpClient* client, cocos2d::network::HttpResponse* response);
 
 private:
 	Sprite* orb;
