@@ -1,4 +1,7 @@
 #include "HelloWorldScene.h"
+#include "../external/json/document.h"
+#include "../external/json/writer.h"
+#include "../external/json/stringbuffer.h"
 
 Scene* HelloWorld::createScene()
 {
@@ -24,6 +27,9 @@ bool HelloWorld::init()
     
 	// seed random with the current time
 	srand(time(NULL));
+
+	// set the game state
+	gameState = GS_IDLE;
 	
 	// add the hud menu
 	createHud();
@@ -67,7 +73,7 @@ void HelloWorld::createCloseButton()
 	startButton = MenuItemImage::create(
 		"button.png",
 		"button.png",
-		CC_CALLBACK_1(HelloWorld::startNewGame, this));
+		CC_CALLBACK_1(HelloWorld::getFlip, this));
 
 	startButton->setPosition(Vec2(origin.x + visibleSize.width / 2, origin.y + 50));
 
@@ -86,20 +92,12 @@ void HelloWorld::createCountLabels()
 	char buffer[50];
 
 	yourGreenCountLabel = Label::createWithTTF("Your Green:-", "fonts/Marker Felt.ttf", 24);
-	yourGreenCountLabel->setPosition(Vec2(origin.x + halfScreenWidth - (halfScreenWidth / 2), origin.y + (yourGreenCountLabel->getContentSize().height * 2) + 10));
+	yourGreenCountLabel->setPosition(Vec2(origin.x + halfScreenWidth, origin.y + (yourGreenCountLabel->getContentSize().height * 2) + 10));
 	this->addChild(yourGreenCountLabel, GO_YOURGREENLABEL);
 
 	yourRedCountLabel = Label::createWithTTF("Your Red:-", "fonts/Marker Felt.ttf", 24);
-	yourRedCountLabel->setPosition(Vec2(origin.x + halfScreenWidth - (halfScreenWidth / 2), origin.y + yourRedCountLabel->getContentSize().height + 10));
+	yourRedCountLabel->setPosition(Vec2(origin.x + halfScreenWidth, origin.y + yourRedCountLabel->getContentSize().height + 10));
 	this->addChild(yourRedCountLabel, GO_YOURREDLABEL);
-
-	compGreenCountLabel = Label::createWithTTF("Comp Green:-", "fonts/Marker Felt.ttf", 24);
-	compGreenCountLabel->setPosition(Vec2(origin.x + halfScreenWidth + (halfScreenWidth / 2), origin.y + (compGreenCountLabel->getContentSize().height * 2) + 10));
-	this->addChild(compGreenCountLabel, GO_COMPGREENLABEL);
-
-	compRedCountLabel = Label::createWithTTF("Comp Red:-", "fonts/Marker Felt.ttf", 24);
-	compRedCountLabel->setPosition(Vec2(origin.x + halfScreenWidth + (halfScreenWidth / 2), origin.y + compRedCountLabel->getContentSize().height + 10));
-	this->addChild(compRedCountLabel, GO_COMPREDLABEL);
 }
 
 void HelloWorld::createLevelLabel()
@@ -124,9 +122,6 @@ void HelloWorld::createAllTimeLabels()
 	yourAllTimeGreenCount = cocos2d::UserDefault::getInstance()->getIntegerForKey(YOUR_ALL_TIME_G_KEY);
 	yourAllTimeRedCount = cocos2d::UserDefault::getInstance()->getIntegerForKey(YOUR_ALL_TIME_R_KEY);
 
-	compAllTimeGreenCount = cocos2d::UserDefault::getInstance()->getIntegerForKey(COMP_ALL_TIME_G_KEY);
-	compAllTimeRedCount = cocos2d::UserDefault::getInstance()->getIntegerForKey(COMP_ALL_TIME_R_KEY);
-
 	int halfScreenWidth = visibleSize.width / 2;
 	char buffer[50];
 
@@ -136,13 +131,6 @@ void HelloWorld::createAllTimeLabels()
 	yourAllTimeTotals->setPosition(Vec2(origin.x + 10, origin.y + visibleSize.height - (yourAllTimeTotals->getContentSize().height) - 10));
 	yourAllTimeTotals->setAnchorPoint(Point::ZERO);
 	this->addChild(yourAllTimeTotals, GO_YOURALLTIMELABEL);
-
-	sprintf(buffer, "Comp All Time: \nGreens:%d Reds:%d", compAllTimeGreenCount, compAllTimeRedCount);
-	std::string compLabel = buffer;
-	compAllTimeTotals = Label::createWithTTF(compLabel, "fonts/Marker Felt.ttf", 24);
-	compAllTimeTotals->setPosition(Vec2(origin.x + 10, origin.y + visibleSize.height - (compAllTimeTotals->getContentSize().height * 2) - 20));
-	compAllTimeTotals->setAnchorPoint(Point::ZERO);
-	this->addChild(compAllTimeTotals, GO_COMPALLTIMELABEL);
 }
 
 void HelloWorld::createOrb()
@@ -152,7 +140,6 @@ void HelloWorld::createOrb()
 
 	// add orb
 	orb = Sprite::create("orb.png");
-	//orb->setColor(Color3B::GRAY);
 	auto action = TintTo::create(TINT_DURATION, 166, 166, 166);
 	orb->runAction(action);
 
@@ -166,11 +153,8 @@ void HelloWorld::createOrb()
 void HelloWorld::startNewGame(Ref* pSender)
 {
 	loopCount = 0;
-	yourTurn = true;
 	yourGCount = 0;
 	yourRCount = 0;
-	compGCount = 0;
-	compRCount = 0;
 	level = 1;
 
 	// schedule a random update
@@ -180,6 +164,17 @@ void HelloWorld::startNewGame(Ref* pSender)
 	scheduleUpdate();
 
 	startButton->setVisible(false);
+
+	// set the game state
+	gameState = GS_RUNNING;
+}
+
+void HelloWorld::nextLevel()
+{
+	gameState = GS_RUNNING;
+	++level;
+	loopCount = 0;
+	//yourTurn = true;
 }
 
 void HelloWorld::gameOver()
@@ -198,11 +193,6 @@ void HelloWorld::gameOver()
 	yourAllTimeRedCount += yourRCount;
 	cocos2d::UserDefault::getInstance()->setIntegerForKey(YOUR_ALL_TIME_R_KEY, yourAllTimeRedCount);
 
-	compAllTimeGreenCount += compGCount;
-	cocos2d::UserDefault::getInstance()->setIntegerForKey(COMP_ALL_TIME_G_KEY, compAllTimeGreenCount);
-	compAllTimeRedCount += compRCount;
-	cocos2d::UserDefault::getInstance()->setIntegerForKey(COMP_ALL_TIME_R_KEY, compAllTimeRedCount);
-
 	// refresh the all time labels
 	char buffer[50];
 
@@ -210,11 +200,10 @@ void HelloWorld::gameOver()
 	std::string yourLabel = buffer;
 	yourAllTimeTotals->setString(yourLabel);
 
-	sprintf(buffer, "Comp All Time: \nGreens:%d Reds:%d", compAllTimeGreenCount, compAllTimeRedCount);
-	std::string compLabel = buffer;
-	compAllTimeTotals->setString(compLabel);
+	sendResults(yourGCount, yourRCount);
 
-	sendResults(yourGCount, yourRCount, compGCount, compRCount);
+	// set the game state
+	gameState = GS_IDLE;
 }
 
 void HelloWorld::menuCloseCallback(Ref* pSender)
@@ -235,57 +224,30 @@ void HelloWorld::changeColor(int value)
 {
 	if (value)
 	{
-		if (yourTurn)
-		{
-			++yourGCount;
-			//orb->setColor(Color3B::GREEN);
-			auto action = TintTo::create(TINT_DURATION, 0, 255, 0);
-			orb->runAction(action);
-		}
-		else
-		{
-			++compGCount;
-		}
+		++yourGCount;
+		auto action = TintTo::create(TINT_DURATION, 0, 255, 0);
+		orb->runAction(action);
 	}
 	else
 	{
-		if (yourTurn)
-		{
-			++yourRCount;
-			//orb->setColor(Color3B::RED);
-			auto action = TintTo::create(TINT_DURATION, 255, 0, 0);
-			orb->runAction(action);
-		}
-		else
-		{
-			++compRCount;
-		}
+		++yourRCount;
+		auto action = TintTo::create(TINT_DURATION, 255, 0, 0);
+		orb->runAction(action);
 	}
 }
 
 void HelloWorld::changeEvent(float dt)
 {
-	++loopCount;
-	if (loopCount <= MAX_TIMES)
+	if (loopCount < randNums.size())//<= MAX_TIMES)
 	{
-		changeColor(rand() % MAX_VALUES);
-	}
-	else if (yourTurn)
-	{
-		// switch to comp turn
-		loopCount = 0;
-		yourTurn = false;
-		//orb->setColor(Color3B::GRAY);
-		auto action = TintTo::create(TINT_DURATION, 166, 166, 166);
-		orb->runAction(action);
+		changeColor(randNums.at(loopCount).asInt());//rand() % MAX_VALUES);
 	}
 	else
 	{
 		if (didPassLevel())
 		{
-			++level;
-			loopCount = 0;
-			yourTurn = true;
+			gameState = GS_NEXTLEVEL;
+			getFlip(NULL);
 		}
 		else
 		{
@@ -293,6 +255,7 @@ void HelloWorld::changeEvent(float dt)
 			gameOver();
 		}
 	}
+	++loopCount;
 }
 
 bool HelloWorld::didPassLevel()
@@ -349,20 +312,12 @@ void HelloWorld::updateLables(float dt)
 	std::string redCountString = buffer;
 	yourRedCountLabel->setString(redCountString);
 
-	sprintf(buffer, "Comp Green:%d", compGCount);
-	std::string compGreenCountString = buffer;
-	compGreenCountLabel->setString(compGreenCountString);
-
-	sprintf(buffer, "Comp Red:%d", compRCount);
-	std::string compRedCountString = buffer;
-	compRedCountLabel->setString(compRedCountString);
-
 	sprintf(buffer, "Level:%d", level);
 	std::string levelString = buffer;
 	levelLabel->setString(levelString);
 }
 
-void HelloWorld::sendResults(int yourGreens, int yourReds, int compGreens, int compReds)
+void HelloWorld::sendResults(int yourGreens, int yourReds)
 {
 	cocos2d::network::HttpRequest* request = new cocos2d::network::HttpRequest();
 	request->setUrl("http://ec2-52-2-116-170.compute-1.amazonaws.com:8080/ajax/AddBasicLog");
@@ -371,7 +326,7 @@ void HelloWorld::sendResults(int yourGreens, int yourReds, int compGreens, int c
 
 	// write the post data
 	char buffer[100];
-	sprintf(buffer, "ygreen=%d&yred=%d&cgreen=%d&cred=%d", yourGreens, yourReds, compGreens, compReds);
+	sprintf(buffer, "green=%d&red=%d", yourGreens, yourReds);
 	const char* postData = buffer;
 	request->setRequestData(postData, strlen(postData));
 
@@ -396,14 +351,56 @@ void HelloWorld::sendResults(int yourGreens, int yourReds, int compGreens, int c
 	*/
 }
 
+void HelloWorld::getFlip(Ref* pSender)
+{
+	cocos2d::network::HttpRequest* request = new cocos2d::network::HttpRequest();
+	request->setUrl("https://api.random.org/json-rpc/1/invoke");
+	request->setRequestType(cocos2d::network::HttpRequest::Type::POST);
+	request->setResponseCallback(CC_CALLBACK_2(HelloWorld::onHttpRequestCompleted, this));
+
+	// write the post data
+	std::string rpc = "{ \"jsonrpc\": \"2.0\",\"method\" : \"generateIntegers\",\"params\" : {\"apiKey\": \"eed1f674-aace-4135-aa0d-c39c9185dc68\",\"n\" : 200,\"min\" : 0,\"max\" : 1,\"replacement\" : true,\"base\" : 10},\"id\": 32595}";
+	request->setRequestData(rpc.c_str(), strlen(rpc.c_str()));
+
+	request->setTag("POST test2");
+	cocos2d::network::HttpClient::getInstance()->send(request);
+	request->release();
+}
+
 void HelloWorld::onHttpRequestCompleted(cocos2d::network::HttpClient* client, cocos2d::network::HttpResponse* response)
 {
-	if (response && response->getResponseCode() == 200 && response->getResponseData()) {
+	if (response && response->getResponseCode() == 200 && response->getResponseData()) 
+	{
 		std::vector<char> *data = response->getResponseData();
 		std::string ret(&(data->front()), data->size());
-		log("%s", ("Response message: " + ret).c_str());
+
+		jsonRead = new JsonReader(ret.c_str());
+		jsonRead->print();
+		ValueMap map = jsonRead->getMap("result");
+		if (!map.empty())
+		{
+			ValueMap random = map.at("random").asValueMap();
+			randNums.clear();
+			randNums = random.at("data").asValueVector();
+			for (std::size_t i = 0; i < randNums.size(); i++)
+			{
+				log("index:%d Num:%d", i, randNums.at(i).asInt());
+			}
+
+			if (gameState == GS_IDLE)
+			{
+				startNewGame(NULL);
+			}
+			else if (gameState == GS_NEXTLEVEL)
+			{
+				nextLevel();
+			}
+			
+		}
+		
 	}
-	else {
-		log("%s", ("Error " + std::to_string(response->getResponseCode()) + " in request").c_str()); //error
+	else 
+	{
+		log("%s", ("Error " + std::to_string(response->getResponseCode()) + " in request").c_str());
 	}
 }

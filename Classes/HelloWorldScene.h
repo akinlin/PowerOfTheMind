@@ -3,6 +3,7 @@
 
 #include "cocos2d.h"
 #include "network/HttpClient.h"
+#include "JsonReader.h"
 
 #define MAX_VALUES 2
 #define MAX_TIMES 200
@@ -10,21 +11,22 @@
 enum GAME_OBJECTS
 {
 	GO_ORB,
-	GO_BUTTONMENU,
 	GO_YOURGREENLABEL,
 	GO_YOURREDLABEL,
-	GO_COMPGREENLABEL,
-	GO_COMPREDLABEL,
 	GO_LEVELLABEL,
 	GO_YOURALLTIMELABEL,
-	GO_COMPALLTIMELABEL,
+	GO_BUTTONMENU
+};
+
+enum GAME_STATE
+{
+	GS_IDLE,
+	GS_RUNNING,
+	GS_NEXTLEVEL,
 };
 
 static const char* YOUR_ALL_TIME_G_KEY = "youralltimeg";
 static const char* YOUR_ALL_TIME_R_KEY = "youralltimer";
-
-static const char* COMP_ALL_TIME_G_KEY = "compalltimeg";
-static const char* COMP_ALL_TIME_R_KEY = "compalltimer";
 
 static const float TINT_DURATION = .25f;
 
@@ -43,7 +45,7 @@ public:
     void menuCloseCallback(cocos2d::Ref* pSender);
     
     // implement the "static create()" method manually
-    CREATE_FUNC(HelloWorld);
+	CREATE_FUNC(HelloWorld);
 
 	// change color based on a random value
 	void changeColor(int value);
@@ -57,27 +59,27 @@ public:
 
 	// start the game
 	void startNewGame(Ref* pSender);
+	void changeTurn();
+	void nextLevel();
 
 	// game over
 	void gameOver();
 
 	// network test code
-	void sendResults(int yourGreens, int yourReds, int compGreens, int compReds);
+	void sendResults(int yourGreens, int yourReds);
+	void getFlip(Ref* pSender);
 	void onHttpRequestCompleted(cocos2d::network::HttpClient* client, cocos2d::network::HttpResponse* response);
 
 private:
 	Sprite* orb;
 	MenuItemImage* startButton;
+	JsonReader* jsonRead;
+	ValueVector randNums;
 
 	Label* yourGreenCountLabel;
 	Label* yourRedCountLabel;
 	int yourGCount;
 	int yourRCount;
-
-	Label* compGreenCountLabel;
-	Label* compRedCountLabel;
-	int compGCount;
-	int compRCount;
 
 	Label* levelLabel;
 	int level;
@@ -86,11 +88,8 @@ private:
 	int yourAllTimeGreenCount;
 	int yourAllTimeRedCount;
 
-	Label* compAllTimeTotals;
-	int compAllTimeGreenCount;
-	int compAllTimeRedCount;
-
 	int loopCount;
+	int gameState;
 	boolean yourTurn;
 
 	// create the hud
@@ -111,4 +110,4 @@ private:
 	bool didPassLevel();
 };
 
-#endif // __HELLOWORLD_SCENE_H__
+#endif // __PowerOfTheMindGame_SCENE_H__
