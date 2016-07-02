@@ -1,0 +1,90 @@
+table player (
+'player_id' INT NOT NULL PRIMARY KEY,
+`name` VARCHAR(50)
+);
+
+	>0000
+	>CPU
+
+	>0001
+	>Human
+
+
+table flipseq (
+'flipseq_id' INT NOT NULL PRIMARY KEY,
+`seq` TEXT
+);
+
+	>0000
+	>010011101010100010101001
+
+	>0001
+	>01010100010101
+
+	>0002
+	>11010101011010101011010101111010101010
+
+
+table rand_types (
+`type_name` VARCHAR(20) NOT NULL PRIMARY KEY,
+`type_desc` VARCHAR(20),
+);
+
+	>MYSQL_RAND
+	>RNG
+	
+	>RANDOM.ORG
+	>RNG
+	
+	>PEAR
+	>REG
+	
+	>Mindsong
+	>REG
+	
+	>Orian
+	>REG
+
+	
+table log (
+`log_id` INT NOT NULL PRIMARY KEY,
+`player_id` INT NOT NULL,
+`flipseq_id` INT NOT NULL,
+`rand_types` VARCHAR(20) NOT NULL,
+`timestamp` TIMESTAMP,
+PRIMARY KEY(`player_id`, `flipseq_id`)
+);
+
+	>0000
+	>0000
+	>0000
+	>MYSQL_RAND
+	>July 14 2015 12:04:43pm
+	
+	>0001
+	>0001
+	>0001
+	>MYSQL_RAND
+	>July 14 2015 12:04:28pm
+
+	>0000
+	>0000
+	>0002
+	>RANDOM.ORG
+	>July 15 2015 06:33:22pm
+	
+
+table entry (
+'entry_id' INT NOT NULL PRIMARY KEY,
+'log_id'
+);
+
+
+
+
+log pair
+id8675
+id1234     | id1234
+Human      | CPU 
+1001010010 | 0010010100
+08:23:06pm | 08:24:37pm

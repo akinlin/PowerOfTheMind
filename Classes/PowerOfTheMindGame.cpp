@@ -38,8 +38,16 @@ bool PowerOfTheMindGame::init()
 	//createOrb();
 
 	createCharacters();
+
+	createShuffle();
     
     return true;
+}
+
+void PowerOfTheMindGame::createShuffle()
+{
+	_shuffleLayer = ShuffleExample::create();
+	addChild(_shuffleLayer);
 }
 
 void PowerOfTheMindGame::createHud()

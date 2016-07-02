@@ -6,6 +6,7 @@
 #include "JsonReader.h"
 #include "HUD.h"
 #include "Character.h"
+#include "ShuffleBag.h"
 
 #define MAX_VALUES 2
 #define MAX_TIMES 200
@@ -77,6 +78,9 @@ private:
 	//MenuItemImage* startButton;
 	JsonReader* jsonRead;
 	ValueVector randNums;
+
+	ShuffleExample* _shuffleLayer;
+	void createShuffle();
 
 	void createHud();
 	HUD* _HUD;
